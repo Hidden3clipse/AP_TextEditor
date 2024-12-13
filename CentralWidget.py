@@ -1,4 +1,5 @@
 from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QPushButton
 
 
@@ -28,3 +29,7 @@ class CentralWidget(QWidget):
     @pyqtSlot(str)
     def set_text(self, text):
         self.__text_edit.setText(text)
+
+    @pyqtSlot(QFont)
+    def set_font(self, font):
+        self.__text_edit.setFont(font)

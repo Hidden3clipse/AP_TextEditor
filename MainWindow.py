@@ -1,13 +1,15 @@
-from idlelib.configdialog import FontPage
-
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import pyqtSlot, QFile, QIODevice, QTextStream, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar
+from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar, QMessageBox
+from PyQt6.uic.Compiler.qtproxies import QtCore
 
 from CentralWidget import CentralWidget
 
 
 class MainWindow(QMainWindow):
+    write_text = pyqtSignal(str)
+    write_font = pyqtSignal(QFont)
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
@@ -19,6 +21,8 @@ class MainWindow(QMainWindow):
         self.__directory = ""
 
         central_widget = CentralWidget(self)
+        self.write_text.connect(central_widget.set_text)
+        self.write_font.connect(central_widget.set_font)
 
         self.setWindowTitle("Mein Texteditor")
 
@@ -61,6 +65,18 @@ class MainWindow(QMainWindow):
             self.__directory = path[:path.rfind("/")]
             self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])
 
+            file = QFile(path)
+
+            if not file.open(QIODevice.OpenModeFlag.ReadOnly):
+                QMessageBox.information(self, "Unable to open file", file.errorString())
+
+                return
+
+            stream = QTextStream(file)
+            text_in_file = stream.readAll()
+
+            self.write_text.emit(text_in_file)
+
     @pyqtSlot()
     def file_save(self):
         (path, self.__initial_filter) = QFileDialog.getSaveFileName(self, "Save File", self.__directory, self.__filter, self.__initial_filter)
@@ -83,3 +99,5 @@ class MainWindow(QMainWindow):
 
         if changed:
             self.__font = changed_font
+
+            self.write_font.emit(self.__font)
