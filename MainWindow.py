@@ -1,6 +1,5 @@
 from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog
+from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar
 
 from CentralWidget import CentralWidget
 
@@ -12,9 +11,13 @@ class MainWindow(QMainWindow):
         self.__initial_filter = "Default files (*.txt)"
         self.__filter = self.__initial_filter + ";;All files (*)"
 
+        self.__directory = ""
+
         central_widget = CentralWidget(self)
 
         self.setWindowTitle("Mein Texteditor")
+
+        self.setStatusBar(QStatusBar(self))
 
         menuBar = QMenuBar(self)
 
@@ -43,18 +46,19 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def file_open(self):
-        (path, self.__initial_filter) = QFileDialog.getOpenFileName(self, "Open File", "./", self.__filter, self.__initial_filter)
+        (path, self.__initial_filter) = QFileDialog.getOpenFileName(self, "Open File", self.__directory, self.__filter, self.__initial_filter)
 
         if path:
-            pass
-            # Ersetzen Sie die jeweilige alte Statusmeldung durch den ausgewählten Pfad
+            self.__directory = path[:path.rfind("/")]
+            self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])
 
     @pyqtSlot()
     def file_save(self):
-        (path, self.__initial_filter) = QFileDialog.getSaveFileName(self, "Save File", "./", self.__filter, self.__initial_filter)
+        (path, self.__initial_filter) = QFileDialog.getSaveFileName(self, "Save File", self.__directory, self.__filter, self.__initial_filter)
 
         if path:
-            pass
+            self.__directory = path[:path.rfind("/")]
+            self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])
 
     @pyqtSlot()
     def file_copy(self):
