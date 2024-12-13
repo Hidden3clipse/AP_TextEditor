@@ -1,4 +1,7 @@
+from idlelib.configdialog import FontPage
+
 from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar
 
 from CentralWidget import CentralWidget
@@ -7,6 +10,8 @@ from CentralWidget import CentralWidget
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+
+        self.__font = QFont()
 
         self.__initial_filter = "Default files (*.txt)"
         self.__filter = self.__initial_filter + ";;All files (*)"
@@ -37,8 +42,12 @@ class MainWindow(QMainWindow):
 
         menuBar.addMenu(files)
 
-        action_font = menuBar.addAction("Font")
+        font = QMenu("Font", menuBar)
+
+        action_font = font.addAction("Font")
         action_font.triggered.connect(self.font)
+
+        menuBar.addMenu(font)
 
         self.setMenuBar(menuBar)
 
@@ -70,4 +79,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def font(self):
-        QFontDialog.show()
+        [changed_font, changed] =QFontDialog.getFont(self.__font, self, "Select your font")
+
+        if changed:
+            self.__font = changed_font
