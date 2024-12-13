@@ -30,6 +30,9 @@ class CentralWidget(QWidget):
     def set_text(self, text):
         self.__text_edit.setText(text)
 
+    def get_text(self):
+        return self.__text_edit.toPlainText()
+
     @pyqtSlot(QFont)
     def set_font(self, font):
         self.__text_edit.setFont(font)

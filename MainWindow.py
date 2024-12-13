@@ -20,17 +20,17 @@ class MainWindow(QMainWindow):
 
         self.__directory = ""
 
-        central_widget = CentralWidget(self)
-        self.write_text.connect(central_widget.set_text)
-        self.write_font.connect(central_widget.set_font)
+        self.__central_widget = CentralWidget(self)
+        self.write_text.connect(self.__central_widget.set_text)
+        self.write_font.connect(self.__central_widget.set_font)
 
         self.setWindowTitle("Mein Texteditor")
 
         self.setStatusBar(QStatusBar(self))
 
-        menuBar = QMenuBar(self)
+        menu_bar = QMenuBar(self)
 
-        files = QMenu("Files", menuBar)
+        files = QMenu("Files", menu_bar)
 
         action_file_open = files.addAction("Open ...")
         action_file_open.triggered.connect(self.file_open)
@@ -44,18 +44,18 @@ class MainWindow(QMainWindow):
         action_file_move = files.addAction("Move ...")
         action_file_move.triggered.connect(self.file_move)
 
-        menuBar.addMenu(files)
+        menu_bar.addMenu(files)
 
-        font = QMenu("Font", menuBar)
+        font = QMenu("Font", menu_bar)
 
         action_font = font.addAction("Font")
         action_font.triggered.connect(self.font)
 
-        menuBar.addMenu(font)
+        menu_bar.addMenu(font)
 
-        self.setMenuBar(menuBar)
+        self.setMenuBar(menu_bar)
 
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(self.__central_widget)
 
     @pyqtSlot()
     def file_open(self):
@@ -77,13 +77,28 @@ class MainWindow(QMainWindow):
 
             self.write_text.emit(text_in_file)
 
+            file.close()
+
     @pyqtSlot()
     def file_save(self):
         (path, self.__initial_filter) = QFileDialog.getSaveFileName(self, "Save File", self.__directory, self.__filter, self.__initial_filter)
 
         if path:
             self.__directory = path[:path.rfind("/")]
-            self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])
+            self.statusBar().showMessage("File saved: " + path[path.rfind("/") + 1:])
+
+            file = QFile(path)
+
+            if not file.open(QIODevice.OpenModeFlag.WriteOnly):
+                QMessageBox.information(self, "Unable to save file", file.errorString())
+
+                return
+
+            stream = QTextStream(file)
+            stream << self.__central_widget.get_text()
+
+            stream.flush()
+            file.close()
 
     @pyqtSlot()
     def file_copy(self):
