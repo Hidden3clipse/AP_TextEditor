@@ -9,13 +9,15 @@ class CentralWidget(QWidget):
 
         bar_layout = QHBoxLayout()
 
-        pushbutton_bold = QPushButton('Bold')
-        pushbutton_italic = QPushButton('Italic')
-        pushbutton_under = QPushButton('Underline')
+        self.__pushbutton_bold = QPushButton('Bold')
+        self.__pushbutton_italic = QPushButton('Italic')
+        self.__pushbutton_under = QPushButton('Underline')
 
-        bar_layout.addWidget(pushbutton_bold)
-        bar_layout.addWidget(pushbutton_italic)
-        bar_layout.addWidget(pushbutton_under)
+        self.__pushbutton_bold.pressed.connect(self.__bold)
+
+        bar_layout.addWidget(self.__pushbutton_bold)
+        bar_layout.addWidget(self.__pushbutton_italic)
+        bar_layout.addWidget(self.__pushbutton_under)
 
         self.__text_edit = QTextEdit()
 
@@ -36,3 +38,26 @@ class CentralWidget(QWidget):
     @pyqtSlot(QFont)
     def set_font(self, font):
         self.__text_edit.setFont(font)
+
+    @pyqtSlot()
+    def __bold(self):
+        cursor = self.__text_edit.textCursor()
+
+        format = cursor.charFormat()
+
+        font = self.__pushbutton_bold.font()
+
+        if self.__pushbutton_bold.font().bold():
+            format.setFontWeight(QFont.Weight.Normal)
+
+            font.setBold(False)
+        else:
+            format.setFontWeight(QFont.Weight.Bold)
+
+            font.setBold(True)
+
+        cursor.setCharFormat(format)
+
+        self.__text_edit.setTextCursor(cursor)
+
+        self.__pushbutton_bold.setFont(font)
