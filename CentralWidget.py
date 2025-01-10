@@ -11,13 +11,15 @@ class CentralWidget(QWidget):
 
         self.__pushbutton_bold = QPushButton('Bold')
         self.__pushbutton_italic = QPushButton('Italic')
-        self.__pushbutton_under = QPushButton('Underline')
+        self.__pushbutton_underline = QPushButton('Underline')
 
         self.__pushbutton_bold.pressed.connect(self.__bold)
+        self.__pushbutton_italic.pressed.connect(self.__italic)
+        self.__pushbutton_underline.pressed.connect(self.__underline)
 
         bar_layout.addWidget(self.__pushbutton_bold)
         bar_layout.addWidget(self.__pushbutton_italic)
-        bar_layout.addWidget(self.__pushbutton_under)
+        bar_layout.addWidget(self.__pushbutton_underline)
 
         self.__text_edit = QTextEdit()
 
@@ -61,3 +63,49 @@ class CentralWidget(QWidget):
         self.__text_edit.setTextCursor(cursor)
 
         self.__pushbutton_bold.setFont(font)
+
+    @pyqtSlot()
+    def __italic(self):
+        cursor = self.__text_edit.textCursor()
+
+        format = cursor.charFormat()
+
+        font = self.__pushbutton_italic.font()
+
+        if self.__pushbutton_italic.font().italic():
+            format.setFontItalic(False)
+
+            font.setItalic(False)
+        else:
+            format.setFontItalic(True)
+
+            font.setItalic(True)
+
+        cursor.setCharFormat(format)
+
+        self.__text_edit.setTextCursor(cursor)
+
+        self.__pushbutton_italic.setFont(font)
+
+    @pyqtSlot()
+    def __underline(self):
+        cursor = self.__text_edit.textCursor()
+
+        format = cursor.charFormat()
+
+        font = self.__pushbutton_underline.font()
+
+        if self.__pushbutton_underline.font().underline():
+            format.setFontUnderline(False)
+
+            font.setUnderline(False)
+        else:
+            format.setFontUnderline(True)
+
+            font.setUnderline(True)
+
+        cursor.setCharFormat(format)
+
+        self.__text_edit.setTextCursor(cursor)
+
+        self.__pushbutton_underline.setFont(font)
