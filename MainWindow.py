@@ -1,130 +1,150 @@
-from PyQt6.QtCore import pyqtSlot, QFile, QIODevice, QTextStream, pyqtSignal  # PyQt-Klassen für Signale, Dateien und Ein-/Ausgabe
+# Importiere die benötigten PyQt6-Klassen
+from PyQt6.QtCore import pyqtSlot, QFile, QIODevice, QTextStream, pyqtSignal  # Klassen für Signale, Dateien und Ein-/Ausgabe
 from PyQt6.QtGui import QFont  # Klasse zur Handhabung von Schriftarten
-from PyQt6.QtWidgets import (QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar, QMessageBox)  # GUI-Komponenten
-from CentralWidget import CentralWidget  # Importiert dein zentrales Widget aus einer separaten Datei
+from PyQt6.QtWidgets import (  # GUI-Komponenten wie Fenster, Menüs, Dialoge und Statusleisten
+    QMainWindow, QMenu, QMenuBar, QFileDialog, QFontDialog, QStatusBar, QMessageBox
+)
+from CentralWidget import CentralWidget  # Importiert ein separates zentrales Widget (deine Texteditor-Logik)
 
 
-class MainWindow(QMainWindow):  # Hauptfenster, das die gesamte Anwendung darstellt
-    # Signale, die an das zentrale Widget gesendet werden können
-    write_text = pyqtSignal(str)  # Ein Signal, um Text an das zentrale Widget zu senden
-    write_font = pyqtSignal(QFont)  # Ein Signal, um die Schriftart an das zentrale Widget zu senden
+class MainWindow(QMainWindow):  # Hauptfenster der Anwendung
+    # Signale, die später an das zentrale Widget gesendet werden können
+    write_text = pyqtSignal(str)  # Signal, um Text an das zentrale Widget zu senden
+    write_font = pyqtSignal(QFont)  # Signal, um die Schriftart an das zentrale Widget zu senden
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)  # Konstruktor der Elternklasse aufrufen
 
-        self.__font = QFont()  # Standard-Schriftart setzen
+        self.__font = QFont()  # Standard-Schriftart initialisieren
+        self.__initial_filter = "Default files (*.txt)"  # Standard-Dateifilter
+        self.__filter = self.__initial_filter + ";;All files (*)"  # Zusätzlicher Filter für alle Dateien
+        self.__directory = ""  # Anfangsverzeichnis für Datei-Dialoge (leer)
 
-        # Filtereinstellungen für Datei-Dialoge
-        self.__initial_filter = "Default files (*.txt)"
-        self.__filter = self.__initial_filter + ";;All files (*)"
+        # Zentrales Widget instanziieren und mit den Signalen verbinden
+        self.__central_widget = CentralWidget(self)
+        self.write_text.connect(self.__central_widget.set_text)  # Verbindet das `write_text`-Signal mit `set_text` im Widget
+        self.write_font.connect(self.__central_widget.set_font)  # Verbindet das `write_font`-Signal mit `set_font` im Widget
 
-        self.__directory = ""  # Anfangsverzeichnis leer setzen
+        self.setWindowTitle("Mein Texteditor")  # Setze den Titel des Fensters
+        self.setStatusBar(QStatusBar(self))  # Erstelle eine Statusleiste am unteren Rand des Fensters
 
-        self.__central_widget = CentralWidget(self)  # Zentrales Widget instanziieren
-        self.write_text.connect(self.__central_widget.set_text)  # Signal verbinden, um Text zu setzen
-        self.write_font.connect(self.__central_widget.set_font)  # Signal verbinden, um die Schriftart zu setzen
+        menu_bar = QMenuBar(self)  # Erstelle eine Menüleiste
 
-        self.setWindowTitle("Mein Texteditor")  # Fenstertitel setzen
-        self.setStatusBar(QStatusBar(self))  # Statusleiste hinzufügen
-
-        menu_bar = QMenuBar(self)  # Menüleiste erstellen
-
-        # Menü "Files" hinzufügen
+        # Menü "Files" erstellen
         files = QMenu("Files", menu_bar)
 
-        # "Open"-Aktion
+        # Aktion zum Öffnen einer Datei
         action_file_open = files.addAction("Open ...")
-        action_file_open.triggered.connect(self.file_open)  # Verbindung mit der file_open-Methode
+        action_file_open.triggered.connect(self.file_open)  # Verbindet die Aktion mit der Methode `file_open`
 
-        # "Save"-Aktion
+        # Aktion zum Speichern einer Datei
         action_file_save = files.addAction("Save ...")
-        action_file_save.triggered.connect(self.file_save)  # Verbindung mit der file_save-Methode
+        action_file_save.triggered.connect(self.file_save)  # Verbindet die Aktion mit der Methode `file_save`
 
-        # "Copy"-Aktion (Platzhalter)
+        # Aktion zum Kopieren einer Datei
         action_file_copy = files.addAction("Copy ...")
-        action_file_copy.triggered.connect(self.file_copy)  # Verbindung mit der file_copy-Methode (noch leer)
+        action_file_copy.triggered.connect(self.file_copy)  # Verbindet die Aktion mit der Methode `file_copy`
 
-        # "Move"-Aktion (Platzhalter)
+        # Aktion zum Verschieben einer Datei
         action_file_move = files.addAction("Move ...")
-        action_file_move.triggered.connect(self.file_move)  # Verbindung mit der file_move-Methode (noch leer)
+        action_file_move.triggered.connect(self.file_move)  # Verbindet die Aktion mit der Methode `file_move`
 
-        menu_bar.addMenu(files)  # "Files"-Menü zur Menüleiste hinzufügen
+        menu_bar.addMenu(files)  # Füge das "Files"-Menü zur Menüleiste hinzu
 
-        # Menü "Font" hinzufügen
+        # Menü "Font" erstellen
         font = QMenu("Font", menu_bar)
+        action_font = font.addAction("Font")  # Aktion zum Ändern der Schriftart hinzufügen
+        action_font.triggered.connect(self.font)  # Verbindet die Aktion mit der Methode `font`
+        menu_bar.addMenu(font)  # Füge das "Font"-Menü zur Menüleiste hinzu
 
-        # "Font"-Aktion
-        action_font = font.addAction("Font")
-        action_font.triggered.connect(self.font)  # Verbindung mit der font-Methode
-
-        menu_bar.addMenu(font)  # "Font"-Menü zur Menüleiste hinzufügen
-
-        self.setMenuBar(menu_bar)  # Menüleiste im Hauptfenster setzen
-        self.setCentralWidget(self.__central_widget)  # Zentrales Widget setzen
+        self.setMenuBar(menu_bar)  # Setze die erstellte Menüleiste im Fenster
+        self.setCentralWidget(self.__central_widget)  # Setze das zentrale Widget in das Hauptfenster
 
     # Methode, um eine Datei zu öffnen
     @pyqtSlot()
     def file_open(self):
-        # Datei-Auswahl-Dialog öffnen
-        (path, self.__initial_filter) = QFileDialog.getOpenFileName(self, "Open File", self.__directory, self.__filter, self.__initial_filter)
+        # Datei-Auswahl-Dialog anzeigen
+        (path, self.__initial_filter) = QFileDialog.getOpenFileName(
+            self, "Open File", self.__directory, self.__filter, self.__initial_filter
+        )
 
         if path:  # Wenn ein Pfad ausgewählt wurde
-            self.__directory = path[:path.rfind("/")]  # Verzeichnis des Pfads speichern
-            self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])  # Statusleiste aktualisieren
+            self.__directory = path[:path.rfind("/")]  # Speichere das Verzeichnis des ausgewählten Pfads
+            self.statusBar().showMessage("File opened: " + path[path.rfind("/") + 1:])  # Zeige den Dateinamen in der Statusleiste an
 
-            file = QFile(path)  # Datei-Objekt erstellen
-
-            if not file.open(QIODevice.OpenModeFlag.ReadOnly):  # Datei im Lesemodus öffnen
-                # Fehler anzeigen, wenn die Datei nicht geöffnet werden kann
+            file = QFile(path)  # Erstelle ein QFile-Objekt
+            if not file.open(QIODevice.OpenModeFlag.ReadOnly):  # Öffne die Datei im Lesemodus
+                # Zeige eine Fehlermeldung an, wenn die Datei nicht geöffnet werden kann
                 QMessageBox.information(self, "Unable to open file", file.errorString())
                 return
 
-            stream = QTextStream(file)  # Text-Stream für Datei-Inhalt
-            text_in_file = stream.readAll()  # Dateiinhalt lesen
-
-            self.write_text.emit(text_in_file)  # Textinhalt an das zentrale Widget senden
-
-            file.close()  # Datei schließen
+            stream = QTextStream(file)  # Erstelle einen Textstream für die Datei
+            text_in_file = stream.readAll()  # Lese den gesamten Inhalt der Datei
+            self.write_text.emit(text_in_file)  # Sende den Textinhalt an das zentrale Widget
+            file.close()  # Schließe die Datei
 
     # Methode, um eine Datei zu speichern
     @pyqtSlot()
     def file_save(self):
-        # Datei-Speicher-Dialog öffnen
-        (path, self.__initial_filter) = QFileDialog.getSaveFileName(self, "Save File", self.__directory, self.__filter, self.__initial_filter)
+        # Datei-Speicher-Dialog anzeigen
+        (path, self.__initial_filter) = QFileDialog.getSaveFileName(
+            self, "Save File", self.__directory, self.__filter, self.__initial_filter
+        )
 
         if path:  # Wenn ein Pfad ausgewählt wurde
-            self.__directory = path[:path.rfind("/")]  # Verzeichnis des Pfads speichern
-            self.statusBar().showMessage("File saved: " + path[path.rfind("/") + 1:])  # Statusleiste aktualisieren
+            self.__directory = path[:path.rfind("/")]  # Speichere das Verzeichnis des ausgewählten Pfads
+            self.statusBar().showMessage("File saved: " + path[path.rfind("/") + 1:])  # Zeige den Dateinamen in der Statusleiste an
 
-            file = QFile(path)  # Datei-Objekt erstellen
-
-            if not file.open(QIODevice.OpenModeFlag.WriteOnly):  # Datei im Schreibmodus öffnen
-                # Fehler anzeigen, wenn die Datei nicht geöffnet werden kann
+            file = QFile(path)  # Erstelle ein QFile-Objekt
+            if not file.open(QIODevice.OpenModeFlag.WriteOnly):  # Öffne die Datei im Schreibmodus
+                # Zeige eine Fehlermeldung an, wenn die Datei nicht gespeichert werden kann
                 QMessageBox.information(self, "Unable to save file", file.errorString())
                 return
 
-            stream = QTextStream(file)  # Text-Stream für Datei-Inhalt
-            stream << self.__central_widget.get_text()  # Textinhalt aus dem zentralen Widget schreiben
+            stream = QTextStream(file)  # Erstelle einen Textstream für die Datei
+            stream << self.__central_widget.get_text()  # Schreibe den Textinhalt aus dem zentralen Widget in die Datei
+            stream.flush()  # Leere den Stream
+            file.close()  # Schließe die Datei
 
-            stream.flush()  # Stream leeren
-            file.close()  # Datei schließen
-
-    # Methode, um eine Datei zu kopieren (noch nicht implementiert)
+    # Methode, um eine Datei zu kopieren
     @pyqtSlot()
     def file_copy(self):
-        pass
+        # Dialog, um die Quelldatei auszuwählen
+        (source_path, _) = QFileDialog.getOpenFileName(self, "Select File to Copy", self.__directory, self.__filter)
 
-    # Methode, um eine Datei zu verschieben (noch nicht implementiert)
+        if source_path:  # Wenn ein Pfad ausgewählt wurde
+            # Dialog, um den Zielort auszuwählen
+            (dest_path, _) = QFileDialog.getSaveFileName(self, "Select Destination for Copy", self.__directory, self.__filter)
+
+            if dest_path:  # Wenn ein Zielort ausgewählt wurde
+                if QFile.copy(source_path, dest_path):  # Versuche, die Datei zu kopieren
+                    self.statusBar().showMessage(f"File copied to: {dest_path}")  # Zeige eine Erfolgsmeldung an
+                else:
+                    QMessageBox.warning(self, "Copy Error", "Unable to copy the file.")  # Zeige eine Fehlermeldung an
+
+    # Methode, um eine Datei zu verschieben
     @pyqtSlot()
     def file_move(self):
-        pass
+        # Dialog, um die Quelldatei auszuwählen
+        (source_path, _) = QFileDialog.getOpenFileName(self, "Select File to Move", self.__directory, self.__filter)
+
+        if source_path:  # Wenn ein Pfad ausgewählt wurde
+            # Dialog, um den Zielort auszuwählen
+            (dest_path, _) = QFileDialog.getSaveFileName(self, "Select Destination for Move", self.__directory, self.__filter)
+
+            if dest_path:  # Wenn ein Zielort ausgewählt wurde
+                if QFile.copy(source_path, dest_path):  # Kopiere die Datei
+                    QFile.remove(source_path)  # Lösche die Quelldatei
+                    self.statusBar().showMessage(f"File moved to: {dest_path}")  # Zeige eine Erfolgsmeldung an
+                else:
+                    QMessageBox.warning(self, "Move Error", "Unable to move the file.")  # Zeige eine Fehlermeldung an
 
     # Methode, um die Schriftart zu ändern
     @pyqtSlot()
     def font(self):
-        # Schriftart-Dialog öffnen
+        # Öffne einen Schriftart-Dialog
         [changed_font, changed] = QFontDialog.getFont(self.__font, self, "Select your font")
 
-        if changed:  # Wenn der Benutzer eine neue Schriftart ausgewählt hat
-            self.__font = changed_font  # Schriftart speichern
-            self.write_font.emit(self.__font)  # Schriftart an das zentrale Widget senden
+        if changed:  # Wenn der Benutzer eine Schriftart ausgewählt hat
+            self.__font = changed_font  # Aktualisiere die Schriftart
+            self.write_font.emit(self.__font)  # Sende die Schriftart an das zentrale Widget
