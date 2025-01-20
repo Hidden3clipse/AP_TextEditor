@@ -80,7 +80,16 @@ class MainWindow(QMainWindow):  # Hauptfenster der Anwendung
 
             stream = QTextStream(file)  # Erstelle einen Textstream für die Datei
             text_in_file = stream.readAll()  # Lese den gesamten Inhalt der Datei
-            self.write_text.emit(text_in_file)  # Sende den Textinhalt an das zentrale Widget
+
+            # Hier wird der gelesene Text aufgeteilt
+            split_text = text_in_file.split('.')  # Teile den Text anhand von Punkten
+
+            # Füge den gesamten Originaltext und die geteilten Teile ins zentrale Widget ein
+            self.write_text.emit("Original Text:\n" + text_in_file)  # Original-Text anzeigen
+            self.write_text.emit("\nSplit Parts:")  # Überschrift für die geteilten Teile
+            for part in split_text:
+                self.write_text.emit(part.strip())  # Jede geteilte Komponente hinzufügen
+
             file.close()  # Schließe die Datei
 
     # Methode, um eine Datei zu speichern
